@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body style="text-align:center; font-family:Arial;">
+
+<h1>📱 Mini App</h1>
+
+<p>Очки: <span id="points">0</span></p>
+
+<button onclick="add()">🎁 Бонус</button>
+<button onclick="spin()">🎰 Рулетка</button>
+
+<p id="log"></p>
+
+<script>
+let tg = window.Telegram.WebApp;
+tg.expand();
+
+let points = 0;
+
+function add() {
+  let r = Math.floor(Math.random() * 20) + 5;
+  points += r;
+  update();
+  log("+" + r + " очков");
+}
+
+function spin() {
+  let arr = [-10, 0, 5, 10, 20];
+  let r = arr[Math.floor(Math.random() * arr.length)];
+  points += r;
+  update();
+  log("выпало " + r);
+}
+
+function update() {
+  document.getElementById("points").innerText = points;
+}
+
+function log(text) {
+  document.getElementById("log").innerText = text;
+}
+</script>
+
+</body>
+</html>
