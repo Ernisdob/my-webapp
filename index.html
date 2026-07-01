@@ -1,1 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Mario Neon Pixel: 30 Stages Edition</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #020208;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.35);
+            border: 4px solid #0d0d1f;
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 100vw;
+            max-height: 100vh;
+            background: #000;
+        }
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 30px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8), 0 0 4px rgba(255,255,255,0.5);
+            letter-spacing: 2px;
+            z-index: 5;
+        }
+        #ui span {
+            color: #00f0ff;
+            text-shadow: 0 0 10px rgba(0,240,255,0.8);
+            font-size: 16px;
+        }
+        .screen-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 4, 12, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 36px;
+            margin: 0 0 10px 0;
+            background: linear-gradient(45deg, #00ffff, #ff0055);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.6));
+            letter-spacing: 3px;
+        }
+        .btn {
+            padding: 14px 40px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #00f0ff, #7000ff);
+            color: white;
+            border: 2px solid #fff;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+            transition: all 0.2s ease;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.8);
+        }
+        #mobile-controls {
+            display: flex;
+            position: absolute;
+            bottom: 25px;
+            left: 0;
+            right: 0;
+            padding: 0 25px;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .d-pad, .action-pad {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        .touch-btn {
+            width: 75px;
+            height: 75px;
+            background: rgba(6, 6, 20, 0.75) !important;
+            border: 3px solid #00f0ff !important;
+            border-radius: 50%;
+            color: #00f0ff !important;
+            font-size: 32px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .touch-btn:active {
+            background: rgba(0, 240, 255, 0.3) !important;
+            box-shadow: 0 0 35px #00f0ff;
+            transform: scale(0.9);
+        }
+        #touch-jump {
+            width: 85px;
+            height: 85px;
+            border-color: #ff0055 !important;
+            color: #ff0055 !important;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+        }
+        #touch-jump:active {
+            background: rgba(255, 0, 85, 0.3) !important;
+            box-shadow: 0 0 35px #ff0055;
+        }
+    </style>
+</head>
+<body>
 
+<div id="game-container">
+    <div id="ui">
+        <div>MARIO SCORE<br><span id="score-val">000000</span></div>
+        <div>STAGE<br><span id="stage-val" style="color: #ffcc00;">1 / 30</span></div>
+        <div>COINS<br>🪙 x<span id="coins-val">00</span></div>
+        <div>STATUS<br><span id="status-val">SMALL</span></div>
+    </div>
+
+    <!-- Экраны состояний -->
+    <div id="menu-screen" class="screen-overlay">
+        <h1>NEON MARIO EMPIRE</h1>
+        <p style="color: #8a9fc4; margin-bottom: 30px; font-size: 14px; text-align:center;">30 Уровней • Улучшенный неоновый рендеринг • Система биомов</p>
+        <button class="btn" onclick="startGame(1)">СТАРТ ИГРЫ</button>
+    </div>
+
+    <div id="gameover-screen" class="screen-overlay" style="display: none;">
+        <h1 style="background: linear-gradient(45deg, #ff0000, #ff5555); -webkit-background-clip: text;">MISSION FAILED</h1>
+        <button class="btn" onclick="restartCurrentLevel()">ВОЗРОДИТЬСЯ</button>
+    </div>
+
+    <div id="win-screen" class="screen-overlay" style="display: none;">
+        <h1 style="background: linear-gradient(45deg, #00ff66, #00ffff); -webkit-background-clip: text;">STAGE COMPLETE!</h1>
+        <p id="final-score" style="font-size: 16px; color: #a0b0d0; margin-bottom: 25px;"></p>
+        <button class="btn" id="next-btn" onclick="nextLevel()">СЛЕДУЮЩИЙ УРОВЕНЬ</button>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="d-pad">
+            <div class="touch-btn" id="touch-left">◄</div>
+            <div class="touch-btn" id="touch-right">►</div>
+        </div>
+        <div class="action-pad">
+            <div class="touch-btn" id="touch-jump">▲</div>
+        </div>
+    </div>
+
+    <canvas id="canvas" width="850" height="480"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const GRAVITY = 0.55;
+const FRICTION = 0.86;
+
+let player, platforms, coins, enemies, particles, flagPole, mushrooms;
+let cameraX = 0;
+let gameScore = 0;
+let coinCount = 0;
+let isPlaying = false;
+let globalTimer = 0;
+let currentLevel = 1;
+let totalLevels = 30;
+let keys = { left: false, right: false, up: false };
+
+// --- ЦВЕТОВЫЕ ПАЛИТРЫ ДЛЯ БИОМОВ ---
+const BIOMES = {
+    cyber: { skyTop: '#040414', skyBottom: '#0e1232', ground: '#08f0ff', groundFill: '#0b0b26', brick: '#ff0055', accent: '#00ffff' },
+    toxic: { skyTop: '#020d04', skyBottom: '#0c2611', ground: '#39ff14', groundFill: '#061408', brick: '#ccff00', accent: '#39ff14' },
+    lava:  { skyTop: '#140202', skyBottom: '#380b0b', ground: '#ff3300', groundFill: '#1a0505', brick: '#ff6600', accent: '#ffcc00' },
+    ice:   { skyTop: '#051126', skyBottom: '#1a3c5c', ground: '#00e5ff', groundFill: '#0b192e', brick: '#ffffff', accent: '#a6f3ff' },
+    hell:  { skyTop: '#0d001a', skyBottom: '#260033', ground: '#bd00ff', groundFill: '#10001a', brick: '#ff00ff', accent: '#e0a6ff' }
+};
+
+function getBiomeForLevel(lvl) {
+    if (lvl <= 6) return BIOMES.cyber;
+    if (lvl <= 12) return BIOMES.toxic;
+    if (lvl <= 18) return BIOMES.ice;
+    if (lvl <= 24) return BIOMES.lava;
+    return BIOMES.hell;
+}
+
+// --- СИСТЕМА ГЕНЕРАЦИИ 30 УРОВНЕЙ ---
+function initLevel(levelNum) {
+    cameraX = 0;
+    particles = [];
+    mushrooms = [];
+    globalTimer = 0;
+
+    let biome = getBiomeForLevel(levelNum);
+    
+    player = {
+        x: 100, y: 300,
+        width: 28, height: player && player.isBig ? 60 : 42, 
+        vx: 0, vy: 0,
+        isGrounded: false,
+        facing: 'right',
+        animFrame: 0,
+        isMoving: false,
+        isBig: player ? player.isBig : false,          
+        invulnerableFrames: 0  
+    };
+
+    platforms = [];
+    coins = [];
+    enemies = [];
+
+    let currentX = 0;
+    let groundSegments = 5 + Math.floor(levelNum * 0.5); 
+    
+    for(let i=0; i < groundSegments; i++) {
+        let segWidth = 300 + Math.floor(Math.sin(i * levelNum) * 150) + 200;
+        if (i === 0) segWidth = 850; 
+        
+        platforms.push({ x: currentX, y: 424, w: segWidth, h: 60, type: 'ground' });
+        
+        if(i > 0) {
+            let enemyCount = 1 + Math.floor(levelNum / 8);
+            for(let e=0; e < enemyCount; e++) {
+                enemies.push({
+                    x: currentX + 100 + (e * 120),
+                    y: 392, w: 32, h: 32,
+                    vx: -(1.2 + (levelNum * 0.05) + Math.random()*0.4),
+                    dead: false, deadTimer: 0
+                });
+            }
+        }
+
+        currentX += segWidth;
+        if (i < groundSegments - 1) {
+            let gapSize = 90 + Math.min(levelNum * 3, 70); 
+            currentX += gapSize; 
+        }
+    }
+
+    let mapLength = currentX;
+    
+    for (let x = 300; x < mapLength - 400; x += 160 + Math.floor(Math.cos(x) * 60)) {
+        let pattern = x % 4;
+        let blockY = 280 - (Math.floor(Math.sin(x) * 2) * 34);
+
+        if (pattern === 0) {
+            platforms.push({ x: x, y: blockY, w: 34, h: 34, type: 'box', hasMushroom: (Math.random() > 0.4) });
+            platforms.push({ x: x + 34, y: blockY, w: 34, h: 34, type: 'brick' });
+            platforms.push({ x: x + 68, y: blockY, w: 34, h: 34, type: 'box', hasCoin: true });
+            coins.push({ x: x + 34 + 8, y: blockY - 40, collected: false });
+        } 
+        else if (pattern === 1) {
+            let pipeH = 70 + Math.min(levelNum * 2, 50);
+            platforms.push({ x: x, y: 424 - pipeH, w: 54, h: pipeH, type: 'pipe' });
+        }
+        else if (pattern === 2 && levelNum > 3) {
+            let steps = Math.min(2 + Math.floor(levelNum/6), 5);
+            for(let s=0; s<steps; s++) {
+                platforms.push({ x: x + (s*34), y: 424 - ((s+1)*34), w: 34, h: (s+1)*34, type: 'step' });
+            }
+        }
+        else {
+            platforms.push({ x: x, y: blockY - 50, w: 34, h: 34, type: 'box', hasCoin: true });
+            coins.push({ x: x + 8, y: blockY - 90, collected: false });
+        }
+    }
+
+    flagPole = { x: mapLength + 60, y: 90, w: 10, h: 334, flagY: 110, triggered: false };
+    updateUI();
+}
+
+// --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
+window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd' || e.key.toLowerCase() === 'в') keys.right = true;
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'ф') keys.left = true;
+    if (e.key === 'ArrowUp' || e.key === ' ' || e.key.toLowerCase() === 'w' || e.key.toLowerCase() === 'ц') keys.up = true;
+});
+window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd' || e.key.toLowerCase() === 'в') keys.right = false;
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'ф') keys.left = false;
+    if (e.key === 'ArrowUp' || e.key === ' ' || e.key.toLowerCase() === 'w' || e.key.toLowerCase() === 'ц') keys.up = false;
+});
+
+// --- ИСПРАВЛЕННОЕ И НАДЕЖНОЕ СЕНСОРНОЕ УПРАВЛЕНИЕ (ОБИДНАЯ ОШИБКА ИСПРАВЛЕНА) ---
+const bindTouchElement = (id, keyName) => {
+    const el = document.getElementById(id);
+    
+    // Поддержка мобильных тач-событий
+    el.addEventListener('touchstart', (e) => { 
+        keys[keyName] = true; 
+        e.preventDefault(); 
+    }, { passive: false });
+    
+    el.addEventListener('touchend', (e) => { 
+        keys[keyName] = false; 
+        e.preventDefault(); 
+    }, { passive: false });
+
+    el.addEventListener('touchcancel', (e) => { 
+        keys[keyName] = false; 
+        e.preventDefault(); 
+    }, { passive: false });
+
+    // Поддержка кликов мыши (для тестирования в симуляторе девелопера)
+    el.addEventListener('mousedown', () => { keys[keyName] = true; });
+    el.addEventListener('mouseup', () => { keys[keyName] = false; });
+    el.addEventListener('mouseleave', () => { keys[keyName] = false; });
+};
+
+// Привязываем кнопки напрямую к объекту ввода
+bindTouchElement('touch-left', 'left');
+bindTouchElement('touch-right', 'right');
+bindTouchElement('touch-jump', 'up');
+
+
+function startGame(lvl) {
+    currentLevel = lvl;
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('gameover-screen').style.display = 'none';
+    document.getElementById('win-screen').style.display = 'none';
+    if(lvl === 1) { gameScore = 0; coinCount = 0; }
+    initLevel(currentLevel);
+    if (!isPlaying) {
+        isPlaying = true;
+        requestAnimationFrame(update);
+    }
+}
+
+function restartCurrentLevel() {
+    startGame(currentLevel);
+}
+
+function nextLevel() {
+    if (currentLevel < totalLevels) {
+        startGame(currentLevel + 1);
+    } else {
+        document.getElementById('win-screen').innerHTML = `<h1>ТЫ ПРОШЕЛ ВСЮ ИМПЕРИЮ!</h1><p style='color:#fff'>Финальный счет: ${gameScore}</p>`;
+    }
+}
+
+function spawnSparkle(x, y, color) {
+    for (let i = 0; i < 8; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6 - 2,
+            size: Math.random() * 4 + 2,
+            color: color,
+            life: 30,
+            type: 'sparkle'
+        });
+    }
+}
+
+// --- ЯДРО ФИЗИКИ И ЛОГИКИ ИГРЫ ---
+function update() {
+    if (!isPlaying) return;
+    globalTimer++;
+
+    if (player.invulnerableFrames > 0) player.invulnerableFrames--;
+
+    player.isMoving = false;
+    if (keys.right && !flagPole.triggered) {
+        player.vx += 0.42; player.facing = 'right'; player.isMoving = true; player.animFrame += 0.2;
+    } else if (keys.left && !flagPole.triggered) {
+        player.vx -= 0.42; player.facing = 'left'; player.isMoving = true; player.animFrame += 0.2;
+    } else {
+        player.vx *= FRICTION;
+    }
+
+    if (keys.up && player.isGrounded && !flagPole.triggered) {
+        player.vy = player.isBig ? -13.5 : -12.5; player.isGrounded = false;
+    }
+
+    player.vy += GRAVITY;
+    if (player.vx > 4.6) player.vx = 4.6;
+    if (player.vx < -4.6) player.vx = -4.6;
+
+    player.x += player.vx;
+    player.isGrounded = false;
+    if (player.x < cameraX) { player.x = cameraX; player.vx = 0; }
+
+    checkPlatformCollisions('x');
+    player.y += player.vy;
+    checkPlatformCollisions('y');
+
+    if (player.y > canvas.height) { gameOver(); return; }
+
+    if (player.x > cameraX + canvas.width * 0.45) {
+        cameraX = player.x - canvas.width * 0.45;
+    }
+
+    mushrooms.forEach((mush, index) => {
+        mush.vy += GRAVITY; mush.x += mush.vx;
+        platforms.forEach(plat => {
+            if (mush.x + mush.w > plat.x && mush.x < plat.x + plat.w && mush.y + mush.h > plat.y && mush.y < plat.y + plat.h) {
+                if (mush.vx > 0 && mush.x + mush.w - mush.vx <= plat.x) { mush.vx *= -1; mush.x = plat.x - mush.w; }
+                else if (mush.vx < 0 && mush.x - mush.vx >= plat.x + plat.w) { mush.vx *= -1; mush.x = plat.x + plat.w; }
+                if (mush.vy > 0 && mush.y + mush.h - mush.vy <= plat.y) { mush.vy = 0; mush.y = plat.y - mush.h; }
+            }
+        });
+        mush.y += mush.vy;
+        if (player.x + player.width > mush.x && player.x < mush.x + mush.w && player.y + player.height > mush.y && player.y < mush.y + mush.h) {
+            mushrooms.splice(index, 1);
+            if (!player.isBig) {
+                player.isBig = true; player.y -= 18; player.height = 60;
+                spawnSparkle(player.x + player.width/2, player.y + player.height/2, '#00ffcc');
+                updateUI();
+            }
+        }
+    });
+
+    enemies.forEach(enemy => {
+        if (enemy.dead) { enemy.deadTimer++; return; }
+        enemy.x += enemy.vx;
+        platforms.forEach(plat => {
+            if (enemy.x + enemy.w > plat.x && enemy.x < plat.x + plat.w && enemy.y + enemy.h > plat.y && enemy.y < plat.y + plat.h) {
+                enemy.vx *= -1; enemy.x += enemy.vx;
+            }
+        });
+        if (player.x + player.width > enemy.x && player.x < enemy.x + enemy.w && player.y + player.height > enemy.y && player.y < enemy.y + enemy.h) {
+            if (player.vy > 0 && player.y + player.height - player.vy <= enemy.y + 12) {
+                enemy.dead = true; player.vy = -8.5; gameScore += 200;
+                spawnSparkle(enemy.x + 16, enemy.y + 16, '#ff5500'); updateUI();
+            } else if (!flagPole.triggered && player.invulnerableFrames === 0) {
+                if (player.isBig) {
+                    player.isBig = false; player.height = 42; player.invulnerableFrames = 90;
+                    spawnSparkle(player.x + player.width/2, player.y + player.height/2, '#ff0055'); updateUI();
+                } else { gameOver(); }
+            }
+        }
+    });
+
+    coins.forEach(coin => {
+        if (!coin.collected && player.x + player.width > coin.x && player.x < coin.x + 18 && player.y + player.height > coin.y && player.y < coin.y + 18) {
+            coin.collected = true; coinCount++; gameScore += 100;
+            spawnSparkle(coin.x + 9, coin.y + 9, '#ffcc00'); updateUI();
+        }
+    });
+
+    particles.forEach((p, index) => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.type === 'brick') p.vy += 0.35;
+        p.life--; if (p.life <= 0) particles.splice(index, 1);
+    });
+
+    if (!flagPole.triggered && player.x + player.width >= flagPole.x && player.x <= flagPole.x + flagPole.w) {
+        flagPole.triggered = true; player.vx = 0; player.vy = 2.5; gameScore += 2000; updateUI();
+    }
+
+    if (flagPole.triggered) {
+        if (flagPole.flagY < canvas.height - 90) {
+            flagPole.flagY += 3;
+            player.y += (player.y < canvas.height - (player.height + 5)) ? 2.5 : 0;
+        } else { winLevelScreen(); return; }
+    }
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function checkPlatformCollisions(axis) {
+    platforms.forEach(plat => {
+        if (player.x + player.width > plat.x && player.x < plat.x + plat.w && player.y + player.height > plat.y && player.y < plat.y + plat.h) {
+            if (axis === 'x') {
+                if (player.vx > 0) player.x = plat.x - player.width;
+                if (player.vx < 0) player.x = plat.x + plat.w;
+                player.vx = 0;
+            } else if (axis === 'y') {
+                if (player.vy > 0) { player.y = plat.y - player.height; player.vy = 0; player.isGrounded = true; }
+                else if (player.vy < 0) {
+                    player.y = plat.y + plat.h; player.vy = 0;
+                    if ((plat.type === 'box') && (plat.hasCoin || plat.hasMushroom)) {
+                        if (plat.hasMushroom) {
+                            mushrooms.push({ x: plat.x + 1, y: plat.y - 30, w: 32, h: 30, vx: 1.8, vy: -3 });
+                            plat.hasMushroom = false;
+                        } else if (plat.hasCoin) { coinCount++; gameScore += 100; spawnSparkle(plat.x + 17, plat.y - 10, '#ffff00'); }
+                        plat.type = 'empty-box'; updateUI();
+                    } else if (plat.type === 'brick') {
+                        if (player.isBig) {
+                            let bColor = getBiomeForLevel(currentLevel).brick;
+                            for (let i = 0; i < 4; i++) {
+                                particles.push({ x: plat.x + 17, y: plat.y + 17, vx: (Math.random() - 0.5) * 6, vy: -Math.random() * 5 - 3, life: 35, type: 'brick', color: bColor });
+                            }
+                            platforms = platforms.filter(p => p !== plat); gameScore += 50;
+                        } else { spawnSparkle(plat.x + 17, plat.y + 34, '#8a9fc4'); }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// --- СИСТЕМА НЕОНОВОГО РЕНДЕРА ---
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let biome = getBiomeForLevel(currentLevel);
+
+    let sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    sky.addColorStop(0, biome.skyTop);
+    sky.addColorStop(1, biome.skyBottom);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 1;
+    let gridSpace = 40;
+    for (let x = Math.floor(cameraX / gridSpace) * gridSpace; x < cameraX + canvas.width; x += gridSpace) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.strokeStyle = biome.accent + '33'; 
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = -200; i < 5000; i += 250) {
+        let px = i - cameraX * 0.2;
+        ctx.lineTo(px, 424); ctx.lineTo(px + 125, 180); ctx.lineTo(px + 250, 424);
+    }
+    ctx.fill(); ctx.stroke();
+
+    platforms.forEach(plat => {
+        ctx.shadowBlur = 0; 
+        if (plat.type === 'ground') {
+            ctx.fillStyle = biome.groundFill;
+            ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.shadowBlur = 15; ctx.shadowColor = biome.ground;
+            ctx.fillStyle = biome.ground;
+            ctx.fillRect(plat.x, plat.y, plat.w, 6);
+        } 
+        else if (plat.type === 'brick') {
+            ctx.fillStyle = biome.brick;
+            ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.shadowBlur = 8; ctx.shadowColor = biome.brick;
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+            ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
+        } 
+        else if (plat.type === 'box') {
+            let bPulse = Math.sin(globalTimer * 0.2) * 5;
+            ctx.shadowBlur = 10 + bPulse; ctx.shadowColor = '#ffcc00';
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.fillStyle = '#000'; ctx.font = 'bold 20px monospace';
+            ctx.fillText('?', plat.x + 12, plat.y + 24);
+        } 
+        else if (plat.type === 'empty-box') {
+            ctx.fillStyle = '#222233';
+            ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.strokeStyle = '#444'; ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
+        } 
+        else if (plat.type === 'pipe') {
+            ctx.fillStyle = '#00cc44';
+            ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.shadowBlur = 12; ctx.shadowColor = '#00ff66';
+            ctx.fillStyle = '#00ff66'; ctx.fillRect(plat.x, plat.y, plat.w, 6);
+            ctx.fillStyle = '#007722'; ctx.fillRect(plat.x - 4, plat.y, plat.w + 8, 16);
+        }
+        else if (plat.type === 'step') {
+            ctx.fillStyle = '#334466'; ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.strokeStyle = biome.accent; ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
+        }
+        ctx.shadowBlur = 0; 
+    });
+
+    mushrooms.forEach(mush => {
+        ctx.shadowBlur = 15; ctx.shadowColor = '#00ffcc';
+        ctx.fillStyle = '#00ffcc';
+        ctx.beginPath(); ctx.arc(mush.x + 16, mush.y + 14, 15, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillRect(mush.x + 10, mush.y + 14, 12, 14);
+        ctx.shadowBlur = 0;
+    });
+
+    coins.forEach(coin => {
+        if (!coin.collected) {
+            ctx.save();
+            let cRot = Math.abs(Math.sin(globalTimer * 0.15));
+            ctx.translate(coin.x + 9, coin.y + 9);
+            ctx.scale(cRot, 1);
+            ctx.shadowBlur = 14; ctx.shadowColor = '#ffcc00';
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+    });
+
+    enemies.forEach(enemy => {
+        if (enemy.dead) {
+            ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(enemy.x, enemy.y + 24, enemy.w, 8); return;
+        }
+        ctx.fillStyle = '#ff3300';
+        ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, 26);
+        ctx.fillStyle = '#ffff00'; 
+        ctx.fillRect(enemy.x + 4, enemy.y + 12, 6, 6);
+        ctx.fillRect(enemy.x + 22, enemy.y + 12, 6, 6);
+    });
+
+    particles.forEach(p => {
+        ctx.fillStyle = p.color || '#ff0055';
+        ctx.fillRect(p.x, p.y, p.size || 5, p.size || 5);
+    });
+
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(flagPole.x, flagPole.y, flagPole.w, flagPole.h);
+    ctx.shadowBlur = 20; ctx.shadowColor = '#ff0055';
+    ctx.fillStyle = '#ff0055';
+    ctx.beginPath();
+    ctx.moveTo(flagPole.x - 40, flagPole.flagY); ctx.lineTo(flagPole.x, flagPole.flagY - 15); ctx.lineTo(flagPole.x, flagPole.flagY + 15);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    if (player.invulnerableFrames === 0 || Math.floor(globalTimer / 4) % 2 === 0) {
+        ctx.save();
+        ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+        if (player.facing === 'left') ctx.scale(-1, 1);
+
+        let bobbing = 0, legOffset = 0;
+        if (!player.isGrounded) {
+            drawMarioSprite(0, -2, true, player.isBig);
+        } else if (player.isMoving) {
+            let frame = Math.floor(player.animFrame) % 3;
+            bobbing = (frame === 1) ? -2 : 0; legOffset = frame;
+            drawMarioSprite(bobbing, legOffset, false, player.isBig);
+        } else {
+            drawMarioSprite(0, 0, false, player.isBig);
+        }
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+function drawMarioSprite(bob, legFrame, isJumping, isBig) {
+    let ox = -player.width / 2, oy = -player.height / 2;
+    let bodyHeight = isBig ? 24 : 15, legYPos = isBig ? 38 : 28, headYPos = isBig ? -6 : 4;
+
+    ctx.fillStyle = '#0066ff';
+    if (isJumping) {
+        ctx.fillRect(ox + 2, oy + legYPos, 10, 10); ctx.fillRect(ox + 14, oy + legYPos - 4, 10, 10);
+    } else {
+        if (legFrame === 1) {
+            ctx.fillRect(ox + 2, oy + legYPos + bob, 8, isBig ? 16 : 12); ctx.fillRect(ox + 16, oy + legYPos + bob, 8, isBig ? 12 : 10);
+        } else if (legFrame === 2) {
+            ctx.fillRect(ox + 4, oy + legYPos + bob, 8, isBig ? 12 : 10); ctx.fillRect(ox + 14, oy + legYPos + bob, 8, isBig ? 16 : 12);
+        } else {
+            ctx.fillRect(ox + 3, oy + legYPos + bob, 9, isBig ? 16 : 12); ctx.fillRect(ox + 14, oy + legYPos + bob, 9, isBig ? 16 : 12);
+        }
+    }
+    ctx.fillStyle = '#ff0055'; ctx.fillRect(ox + 4, oy + 14 + headYPos + bob, 18, bodyHeight); 
+    if (isJumping) {
+        ctx.fillRect(ox - 2, oy + headYPos + 6, 6, isBig ? 18 : 12); ctx.fillRect(ox + 20, oy + headYPos + 16, 8, 6);
+    } else {
+        let armShift = (legFrame === 1) ? 2 : (legFrame === 2) ? -2 : 0;
+        ctx.fillRect(ox, oy + headYPos + 16 + bob + armShift, 5, isBig ? 15 : 10); ctx.fillRect(ox + 21, oy + headYPos + 16 + bob - armShift, 5, isBig ? 15 : 10);
+    }
+    ctx.fillStyle = '#331a00'; ctx.fillRect(ox + 2, oy + player.height - 4, 9, 4); ctx.fillRect(ox + 15, oy + player.height - 4, 9, 4);
+    ctx.fillStyle = '#ffcca8'; ctx.fillRect(ox + 6, oy + headYPos + bob, 14, 11); ctx.fillRect(ox + 18, oy + headYPos + 4 + bob, 5, 4); 
+    ctx.fillStyle = '#111'; ctx.fillRect(ox + 14, oy + headYPos + 2 + bob, 2, 4); ctx.fillRect(ox + 14, oy + headYPos + 7 + bob, 7, 3); 
+    ctx.fillStyle = '#ff0055'; ctx.fillRect(ox + 5, oy + headYPos - 4 + bob, 14, 5); ctx.fillRect(ox + 9, oy + headYPos - 1 + bob, 12, 2);
+}
+
+function updateUI() {
+    document.getElementById('score-val').innerText = String(gameScore).padStart(6, '0');
+    document.getElementById('coins-val').innerText = String(coinCount).padStart(2, '0');
+    document.getElementById('stage-val').innerText = `${currentLevel} / ${totalLevels}`;
+    document.getElementById('status-val').innerText = player.isBig ? 'SUPER' : 'SMALL';
+    document.getElementById('status-val').style.color = player.isBig ? '#00ffcc' : '#00f0ff';
+}
+
+function gameOver() {
+    isPlaying = false;
+    document.getElementById('gameover-screen').style.display = 'flex';
+}
+
+function winLevelScreen() {
+    isPlaying = false;
+    document.getElementById('final-score').innerText = `Уровень ${currentLevel} пройден! Счет: ${gameScore}`;
+    document.getElementById('next-btn').innerText = currentLevel === totalLevels ? "ФИНАЛ" : "СЛЕДУЮЩИЙ УРОВЕНЬ";
+    document.getElementById('win-screen').style.display = 'flex';
+}
+</script>
+
+</body>
+</html>
